@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>两周年纪念 | 张博&刘雅茹</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Helvetica Neue", sans-serif; }
+        body { width: 100vw; height: 100vh; overflow: hidden; background: linear-gradient(135deg, #ffe4e1 0%, #ffb6c1 100%); color: #4a3b3b; }
+        
+        /* 页面容器 */
+        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease; opacity: 0; pointer-events: none; z-index: 1; padding: 20px; text-align: center; }
+        .page.active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* 封面页 */
+        #cover h1 { font-size: 2.5rem; color: #ff4d6d; margin-bottom: 20px; letter-spacing: 2px; animation: fadeInDown 2s ease forwards; opacity: 0; }
+        #cover h2 { font-size: 1.8rem; color: #c9184a; margin-bottom: 15px; animation: fadeInDown 2s ease 0.5s forwards; opacity: 0; }
+        #cover h3 { font-size: 1.5rem; color: #800f2f; animation: fadeInDown 2s ease 1s forwards; opacity: 0; }
+        #cover .btn { margin-top: 50px; animation: fadeIn 2s ease 1.5s forwards; opacity: 0; }
+
+        /* 抽奖页 */
+        #lottery h2 { font-size: 1.8rem; color: #ff4d6d; margin-bottom: 30px; }
+        .prize-box { width: 80%; min-height: 100px; background: rgba(255,255,255,0.6); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #c9184a; margin-bottom: 30px; padding: 20px; box-shadow: 0 4px 15px rgba(255,182,193,0.5); font-weight: bold; }
+        
+        /* 告白页 */
+        #confess h2 { font-size: 2rem; color: #ff4d6d; margin-bottom: 20px; }
+        #confess p { font-size: 1.1rem; line-height: 1.8; text-align: left; background: rgba(255,255,255,0.5); padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; color: #4a3b3b; }
+
+        /* 按钮通用样式 */
+        .btn { padding: 12px 40px; font-size: 1.2rem; background: #ff4d6d; color: white; border: none; border-radius: 30px; box-shadow: 0 4px 15px rgba(255,77,109,0.4); cursor: pointer; transition: transform 0.2s; font-weight: bold; }
+        .btn:active { transform: scale(0.95); }
+        
+        /* 爱心飘落动画 */
+        .heart { position: absolute; color: #ff4d6d; font-size: 20px; animation: floatUp linear forwards; z-index: 0; opacity: 0.8; }
+        @keyframes floatUp { 
+            0% { transform: translateY(0) scale(0.5); opacity: 0.8; }
+            100% { transform: translateY(-100vh) scale(1.5); opacity: 0; } 
+        }
+        @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-20px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- 背景音乐 (由于浏览器限制，需点击页面任意位置后播放) -->
+    <!-- 可以替换成你自己的MP3链接 -->
+    <audio id="bgm" loop>
+        <source src="https://music.163.com/song/media/outer/url?id=1805194930.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 封面页 -->
+    <div class="page active" id="cover">
+        <h1>12月9号</h1>
+        <h2>张博 & 刘雅茹</h2>
+        <h3>相恋两周年</h3>
+        <button class="btn" id="startBtn">开启纪念</button>
+    </div>
+
+    <!-- 抽奖页 -->
+    <div class="page" id="lottery">
+        <h2>幸运抽奖 (剩余 <span id="chances">5</span> 次)</h2>
+        <div class="prize-box" id="prizeDisplay">点击下方按钮抽奖</div>
+        <button class="btn" id="drawBtn">抽 奖</button>
+        <button class="btn" id="nextBtn" style="display: none; margin-top: 20px; background: #c9184a;">感谢2年的参与</button>
+    </div>
+
+    <!-- 告白页 -->
+    <div class="page" id="confess">
+        <h2>致最爱的你</h2>
+        <p id="confessText"></p>
+    </div>
+
+    <script>
+        // ================== 自定义修改区域 ==================
+        // 1. 修改奖品（可以随便改里面的文字，数量可增减）
+        const prizeList = ["一个大大的拥抱 🫂", "甜蜜亲吻一个 💋", "承包一天的家务 🧹", "请你吃顿大餐 🍽️", "满足你一个愿望 ✨"];
+
+        // 2. 修改告白文字（在这里写你想说的话）
+        const confessText = "亲爱的雅茹，两周年快乐！\n\n时间过得真快，转眼间我们已经携手走过了两个春夏秋冬。这两年里，有欢笑也有感动，感谢你一直以来的包容与陪伴。\n\n未来的日子还很长，我想牵着你的手，去更多的地方，看更多的风景。愿我们的爱情永远如初，两周年快乐！\n\n—— 爱你的张博";
+        // ====================================================
+
+        // DOM 元素获取
+        const coverPage = document.getElementById('cover');
+        const lotteryPage = document.getElementById('lottery');
+        const confessPage = document.getElementById('confess');
+        
+        const startBtn = document.getElementById('startBtn');
+        const drawBtn = document.getElementById('drawBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        const chancesSpan = document.getElementById('chances');
+        const prizeDisplay = document.getElementById('prizeDisplay');
+        const confessTextBox = document.getElementById('confessText');
+        
+        const bgm = document.getElementById('bgm');
+
+        // 初始化告白文字
+        confessTextBox.innerText = confessText;
+
+        // 抽奖逻辑变量
+        let totalChances = 5;
+        let currentChance = totalChances;
+        let isDrawing = false;
+
+        // 背景音乐播放逻辑（用户点击后触发）
+        document.body.addEventListener('click', function() {
+            if (bgm.paused) {
+                bgm.play().catch(e => console.log("浏览器拦截了自动播放，需要用户手动交互"));
+            }
+        }, { once: true });
+
+        // 切换页面函数
+        function switchPage(hidePage, showPage) {
+            hidePage.classList.remove('active');
+            showPage.classList.add('active');
+        }
+
+        // 点击开启纪念
+        startBtn.addEventListener('click', () => {
+            switchPage(coverPage, lotteryPage);
+        });
+
+        // 抽奖按钮点击逻辑
+        drawBtn.addEventListener('click', () => {
+            if (isDrawing || currentChance <= 0) return;
+            isDrawing = true;
+            drawBtn.innerText = "抽取中...";
+            
+            // 模拟抽奖动画
+            let rollCount = 0;
+            let rollInterval = setInterval(() => {
+                let randomIndex = Math.floor(Math.random() * prizeList.length);
+                prizeDisplay.innerText = prizeList[randomIndex];
+                rollCount++;
+                
+                if (rollCount > 10) {
+                    clearInterval(rollInterval);
+                    // 最终结果
+                    let finalPrize = prizeList[Math.floor(Math.random() * prizeList.length)];
+                    prizeDisplay.innerText = "🎉 " + finalPrize + " 🎉";
+                    
+                    currentChance--;
+                    chancesSpan.innerText = currentChance;
+                    isDrawing = false;
+
+                    if (currentChance === 0) {
+                        drawBtn.style.display = 'none';
+                        nextBtn.style.display = 'block';
+                    } else {
+                        drawBtn.innerText = "再抽一次";
+                    }
+                }
+            }, 100);
+        });
+
+        // 进入告白页
+        nextBtn.addEventListener('click', () => {
+            switchPage(lotteryPage, confessPage);
+        });
+
+        // 爱心飘落特效
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.innerText = '❤️';
+            
+            // 随机大小、位置、速度
+            const size = Math.random() * 20 + 10;
+            heart.style.fontSize = size + 'px';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.bottom = '-50px';
+            
+            const duration = Math.random() * 3 + 3;
+            heart.style.animationDuration = duration + 's';
+            
+            document.body.appendChild(heart);
+            
+            // 动画结束后移除
+            setTimeout(() => {
+                heart.remove();
+            }, duration * 1000);
+        }
+
+        // 每 300 毫秒生成一个爱心
+        setInterval(createHeart, 300);
+    </script>
+</body>
+</html>
